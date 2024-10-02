@@ -3,34 +3,34 @@ const Schema = mongoose.Schema;
 
 let Notification = new Schema(
   {
-    idProdui: [
+    Eleve: 
       {
         type: Schema.Types.ObjectId,
-        ref: "Medicament",
+        ref: "Eleve",
+      },
+    
+    isRead: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
       },
     ],
-    isRead: [
-        {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-        },
-      ],
-      isDelete: [
-        {
-          type: Schema.Types.ObjectId,
-          ref: "User",
-        },
-      ],
+    isDelete: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
     TypeNoti: {
       type: String,
     },
-    Vendeur: {
+    Admn: {
       type: Schema.Types.ObjectId,
       ref: "User",
     },
-    Client: {
+    Payements: {
       type: Schema.Types.ObjectId,
-      ref: "User",
+      ref: "Payement",
     },
   },
 

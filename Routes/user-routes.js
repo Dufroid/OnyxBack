@@ -3,69 +3,54 @@ const router = Express.Router();
 require("dotenv").config();
 
 const {
-  handleSign,
   handleSignup,
+  completeSignup,
   userLogin,
-  AddProfilePicture,
-  skip,
-  userlanguage,
-  AddDrug,
-  gettingDrugs,
-  addDescription,
-  gettingDSingleDrug,
-  EditDrugName,
-  EditDrugGramme,
-  EditDrugQty,
-  EditDrugPrrice,
-  DeleteDrug,
-  commandDrugs,
-  getCommandAsNoti,
+  AddingAdm,
+  AddPupil,
+  pupils,
+  searcPupil,
+  specifPupils,
+  payingForMonth,
+  getNoti,
+  deletingNoti,
   goreadNoti,
-  DeleteNoti,
-  getAllCommand,
-  addDrug,
-  cancelDrugCart,
-  addDrugCart,
-  removeDrugCart,
-  cancelSell,
-  selling,
-  soldProduct,
-  dayDrugs,
-  dayChart,
-  notiLength
+  notiLength,
+  gettingPupil,
+  gettingUnPidPupil,
+  classPaid,
+  classUnPaid,
+  PostComminique,
+  SourirePommunique,
+  deleting,
+  HendleComment,
+  commentaire
 } = require("../Controllers/user-controller");
-const { auth, setProfile } = require("../Middleware/auth");
+const { auth } = require("../Middleware/auth");
 
-router.post("/handleSign", handleSign);
 router.post("/handleSignup", handleSignup)
+router.put("/completeSignup", completeSignup)
 router.post("/userLogin", userLogin);
-router.put("/AddProfilePicture/:id", setProfile.single("UploadphotoInput"), AddProfilePicture);
-router.put("/skip/:id", skip);
-router.put("/userlanguage/:id", userlanguage)
-router.post("/AddDrug/:id", AddDrug)
-router.get("/gettingDrugs", gettingDrugs)
-router.put("/addDescription/:id", addDescription)
-router.get("/gettingDSingleDrug/:id",auth,gettingDSingleDrug)
-router.post("/EditDrugName/:id", EditDrugName)
-router.post("/EditDrugGramme/:id", EditDrugGramme)
-router.post("/EditDrugQty/:id", EditDrugQty)
-router.post("/EditDrugPrrice/:id", EditDrugPrrice)
-router.delete("/DeleteDrug/:id", DeleteDrug)
-router.post("/commandDrugs/:id", commandDrugs)
-router.get("/getCommandAsNoti/:id",auth,getCommandAsNoti)
+router.post("/AddingAdm", AddingAdm)
+router.post("/AddPupil/:id", AddPupil)
+router.get("/pupils", pupils)
+router.get("/searcPupil/:id", searcPupil)
+router.get("/specifPupils/:id/:adm", auth, specifPupils)
+router.post("/payingForMonth/:id", payingForMonth)
+router.get("/getNoti/:id", auth, getNoti)
+router.put("/deletingNoti/:id", deletingNoti)
 router.put("/goreadNoti/:userId/:id", goreadNoti)
-router.put("/DeleteNoti/:userId/:id", DeleteNoti)
-router.get("/getAllCommand", auth, getAllCommand)
-router.put("/addDrug/:id", addDrug)
-router.put("/cancelDrugCart/:id", cancelDrugCart)
-router.put("/addDrugCart/:id", addDrugCart)
-router.put("/removeDrugCart/:id", removeDrugCart)
-router.put("/cancelSell", cancelSell)
-router.post("/selling/:id", selling)
-router.get("/soldProduct/:id",auth,soldProduct)
-router.get("/dayDrugs", auth, dayDrugs)
-router.get("/dayChart", auth, dayChart)
 router.get("/notiLength/:id", auth, notiLength)
+router.get("/gettingPupil/:id", gettingPupil)
+router.get("/gettingUnPidPupil/:id", gettingUnPidPupil)
+router.get("/classPaid/:value", auth, classPaid)
+router.get("/classUnPaid/:value", auth, classUnPaid)
+router.post("/PostComminique/:id", PostComminique)
+router.get("/SourirePommunique", SourirePommunique)
+router.put("/deleting/:id", deleting)
+router.post("/HendleComment/:id", HendleComment)
+router.get("/commentaire/:id", auth, commentaire)
+
 
 
 module.exports = router;

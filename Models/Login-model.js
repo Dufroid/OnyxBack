@@ -5,7 +5,6 @@ let Login = new Schema(
   {
     PassWord: {
       type: String,
-      required: true,
     },
     PhoneMail: {
       type: String,

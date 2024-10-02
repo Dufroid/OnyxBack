@@ -5,9 +5,7 @@ const mongoose = require("mongoose");
 const bodyParser = require("body-parser");
 const app = Express();
 
-const PostRoute = require("./Routes/post-routes");
 const UserRoute = require("./Routes/user-routes");
-const CloudRoute = require("./Routes/cloud-routes")
 
 app.use(Cors());
 app.use(Express.json());
@@ -16,11 +14,7 @@ app.use(
     extended: true,
   })
 );
-app.use("/pharmacie/User", UserRoute);
-app.use("/pharmacie/Post", PostRoute);
-
-app.use("/pharmacie", CloudRoute);
-
+app.use("/Sourire/User", UserRoute);
 
 mongoose
   .connect(process.env.URI, { useNewUrlParser: true, useUnifiedTopology: true })

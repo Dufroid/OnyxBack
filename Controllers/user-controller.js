@@ -5,33 +5,19 @@ const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const Login = require("../Models/Login-model");
 const User = require("../Models/User-model");
-const Medicament = require("../Models/Medicament-model");
-const Commende = require("../Models/Commende");
+const Eleve = require("../Models/Eleve-model");
 const Notification = require("../Models/Notification");
-const Ventes = require("../Models/Ventes");
-const Dailychart = require("../Models/DalyChart-model");
-
-//Checking mail
-const handleSign = async (req, res) => {
-  const { Mail } = req.body;
-
-  try {
-    const userfound = await Login.findOne({ PhoneMail: Mail });
-    if (userfound) {
-      res.json({ error: "exist" });
-    } else {
-      res.json("exist");
-    }
-  } catch (error) {}
-};
+const Payement = require("../Models/Payement-model");
+const Communique = require("../Models/Communique-model");
+const Comment = require("../Models/Comment-model");
 
 // Signup user
 const handleSignup = async (req, res) => {
-  const { Nom, Postnom, Mail, Pass, Adress } = req.body;
+  const { Nom, Prenom, Mail, Pass, Annee } = req.body;
   const hashedPassword = await bcrypt.hash(Pass, 10);
   try {
     const userfound = await Login.findOne({ PhoneMail: Mail });
-    const user = new User({ Fname: Nom, Lname: Postnom });
+    const user = new User({ Fname: Nom, Lname: Prenom });
     const login = new Login({
       PassWord: hashedPassword,
       PhoneMail: Mail,
@@ -53,13 +39,23 @@ const handleSignup = async (req, res) => {
   } catch (error) {}
 };
 
-//the User Login controllers
-const userLogin = async (req, res, next) => {
-  const { Mail, PassWord } = req.body;
-  console.log(Mail);
-
+//Complete signup
+const completeSignup = async (req, res) => {
+  const { First, Second, UserId } = req.body;
   try {
-    let found = await Login.findOne({ PhoneMail: Mail }).select([
+    const user = await User.findById(UserId);
+    if (user) {
+      await user.updateOne({ $set: { AnneeScolaire: [First, Second] } });
+      res.json("done");
+    }
+  } catch (error) {}
+};
+
+//the User Login controllers
+const userLogin = async (req, res) => {
+  const { Mail, PassWord } = req.body;
+  try {
+    const found = await Login.findOne({ PhoneMail: Mail }).select([
       "PassWord",
       "PhoneMail",
       "User",
@@ -84,231 +80,186 @@ const userLogin = async (req, res, next) => {
   } catch (err) {}
 };
 
-//Add profile picture
-const AddProfilePicture = async (req, res) => {
-  const userId = req.params.id;
+//Add admin
+const AddingAdm = async (req, res) => {
+  const { Mail } = req.body;
 
-  try {
-    const user = await User.findById(userId);
-    if (user) {
-      res.json({ User: user });
-    }
-  } catch (error) {}
-};
-
-//Skip adding profile
-const skip = async (req, res) => {
-  const userId = req.params.id;
-
-  try {
-    const user = await User.findById(userId);
-    if (user) {
-      res.json({ User: user });
-    }
-  } catch (error) {}
-};
-
-const userlanguage = async (req, res) => {
-  const userId = req.params.id;
-  const { lang } = req.body;
-
-  // try {
-  //   const user = await User.findById(userId)
-  //   if (user) {
-  res.json({ User: lang });
-  //   }
-  // } catch (error) {}
-};
-
-//Add drug
-const AddDrug = async (req, res) => {
-  const userId = req.params.id;
-  const { Drug, MG, Price, Qty, DType, Desc } = req.body;
-  const Med = new Medicament({
-    Nom: Drug,
-    mg: MG,
-    pu: Price,
-    quantite: Qty,
-    type: DType,
-    Description: Desc,
-    Admin: userId,
+  const login = new Login({
+    PhoneMail: Mail,
   });
-  try {
-    const user = await User.findById(userId);
 
-    if (user) {
-      await Med.save();
+  try {
+    const found = await Login.findOne({ PhoneMail: Mail }).select([
+      "PassWord",
+      "PhoneMail",
+      "User",
+    ]);
+
+    if (found) {
+      res.json({ retry: "Mail exist" });
+    } else {
+      await login.save();
       res.json("done");
     }
   } catch (error) {}
 };
 
-//Getting drug
-const gettingDrugs = async (req, res) => {
+// create Notification when paid money
+const Notis = async (eleve, admn) => {
   try {
-    const med = await Medicament.find().sort({ updatedAt: -1 });
-    if (med) {
-      res.json(med);
+    const noti = new Notification({
+      TypeNoti: "Ajout",
+      Eleve: eleve,
+      Admn: admn,
+    });
+    await noti.save();
+  } catch (error) {}
+};
+// Add a pupil
+const AddPupil = async (req, res) => {
+  const { Nom, Prenom, Postnom, Class, Age, Sex, Ecole } = req.body;
+  const user = req.params.id;
+  const eleve = new Eleve({
+    Nom: Nom,
+    Prenom: Prenom,
+    Postom: Postnom,
+    Classe: Class,
+    Age: Age,
+    Sex: Sex,
+    Adm: user,
+    Ecole: Ecole,
+  });
+
+  try {
+    const Adm = await User.findById(user);
+    if (Adm.IsAdmin == true) {
+      await eleve.save();
+      Notis(eleve._id, user);
+      res.json({ done: "done" });
+    } else {
+      res.json("Admin required");
     }
   } catch (error) {}
 };
-//Add user description
-const addDescription = async (req, res) => {
+
+//Getting pupils
+const pupils = async (req, res) => {
+  try {
+    const all = await Eleve.find();
+    if (all) {
+      res.json({ pupils: all });
+    }
+  } catch (error) {}
+};
+
+//Getting pupils
+const specifPupils = async (req, res) => {
+  const id = req.params.id;
+  const adm = req.params.adm;
+  try {
+    const eleve = await Eleve.findById(id).populate("Payements");
+    const userAdm = await User.findById(adm);
+    if (eleve) {
+      res.json({ pupils: eleve, Adm: userAdm });
+    }
+  } catch (error) {}
+};
+
+// create Notification when paid money
+const Noti = async (eleve, admn, payement) => {
+  try {
+    const noti = new Notification({
+      TypeNoti: "Payement",
+      Eleve: eleve,
+      Payements: payement,
+      Admn: admn,
+    });
+    await noti.save();
+  } catch (error) {}
+};
+
+//Payin for a month
+const payingForMonth = async (req, res) => {
+  const { Month, EleveId, MoisAct } = req.body;
+  const UserId = req.params.id;
+
+  try {
+    const eleve = await Eleve.findById(EleveId);
+    const adm = await User.findById(UserId);
+    if (eleve) {
+      const payement = new Payement({
+        Mois: Month,
+        Montat: 1,
+        ActuelMois: MoisAct,
+        Eleve: EleveId,
+        Adm: UserId,
+        AnneeSco: adm.AnneeScolaire,
+      });
+      Noti(EleveId, UserId, payement._id);
+      await payement.save();
+      await eleve.updateOne({ $push: { Payements: payement._id } });
+      res.json("done");
+    }
+  } catch (error) {}
+};
+
+//Searching pupil
+const searcPupil = async (req, res) => {
   const userId = req.params.id;
-  const { Desc } = req.body;
+  const word = req.query.pupil;
+  var tab = [];
 
   try {
-    const user = await User.findById(userId);
-    if (user) {
-      await user.updateOne({ $set: { Desc: Desc } });
-      res.json("ok");
+    const Name = await Eleve.find({ Nom: { $regex: word, $options: "i" } });
+    const Prenom = await Eleve.find({
+      Prenom: { $regex: word, $options: "i" },
+      _id: { $nin: Name },
+    });
+    // const Postnom = await Eleve.find({ Postom: { $regex: word, '$options' : 'i' } })
+
+    if (Name || Prenom) {
+      tab = Name.concat(...Prenom);
+      res.json(tab);
     }
-  } catch (error) {}
-};
-
-//getting single drug
-const gettingDSingleDrug = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const med = await Medicament.findById(id);
-    med ? res.json({ med }) : res.json("not exist");
-  } catch (error) {}
-};
-
-//Editing drug name
-const EditDrugName = async (req, res) => {
-  const { id } = req.params;
-  const { Name } = req.body;
-
-  try {
-    const med = await Medicament.findById(id);
-    if (med) {
-      await med.updateOne({ $set: { Nom: Name } });
-      res.json("done");
-    }
-  } catch (error) {}
-};
-
-//Editing drug gramme
-const EditDrugGramme = async (req, res) => {
-  const { id } = req.params;
-  const { Mg } = req.body;
-
-  try {
-    const med = await Medicament.findById(id);
-    if (med) {
-      await med.updateOne({ $set: { mg: Mg } });
-      res.json("done");
-    }
-  } catch (error) {}
-};
-
-//Editing drug quantity
-const EditDrugQty = async (req, res) => {
-  const { id } = req.params;
-  const { Qty } = req.body;
-
-  try {
-    const med = await Medicament.findById(id);
-    if (med) {
-      await med.updateOne({ $set: { quantite: Qty } });
-      res.json("done");
-    }
-  } catch (error) {}
-};
-
-//Editing drug price
-const EditDrugPrrice = async (req, res) => {
-  const { id } = req.params;
-  const { Price } = req.body;
-
-  try {
-    const med = await Medicament.findById(id);
-    if (med) {
-      await med.updateOne({ $set: { pu: Price } });
-      res.json("done");
-    }
-  } catch (error) {}
-};
-
-//deleting drug
-const DeleteDrug = async (req, res) => {
-  const { id } = req.params;
-  try {
-    const med = await Medicament.findByIdAndDelete(id);
-    med ? res.json("deleted successfully") : res.json("not deleted");
-  } catch (error) {}
-};
-
-//Noti for commande
-const CreateNoti = async (client, e) => {
-  const noti = new Notification({
-    idProdui: e,
-    Client: client,
-    TypeNoti: "Onyx",
-  });
-  await noti.save();
-};
-//Command drugs
-const commandDrugs = async (req, res) => {
-  const client = req.params.id;
-  const { Data, PTG } = req.body;
-  var idProd = [];
-  const vante = Data.map(async (e) => {
-    idProd.push(e.idProd);
-  });
-  const com = new Commende({
-    idProdui: idProd,
-    Client: client,
-    PT: PTG,
-    Com: Data,
-  });
-  if (vante) {
-    await com.save();
-    CreateNoti(client, idProd);
-    res.json("done");
-  }
+  } catch (er) {}
 };
 
 //Getting user noti
-const getCommandAsNoti = async (req, res) => {
+const getNoti = async (req, res) => {
   const userId = req.params.id;
-  let tab = [];
 
   try {
-    const FoundOnyx = await User.findById(userId);
+    const admin = await User.findById(userId);
 
-    if (FoundOnyx.IsAdmin || FoundOnyx.IsSeller) {
-      const typenoti = await Notification.find({
-        TypeNoti: "Onyx",
+    if (admin.IsAdmin == true) {
+      const noti = await Notification.find({
         isDelete: { $ne: userId },
       })
-        .populate("Client", ["Fname", "Lname", "ProfilePicture"])
-        .populate("idProdui", ["Nom"]);
-      const admnoti = await Notification.find({
-        TypeNoti: "adm",
-        isDelete: { $ne: userId },
-      })
-        .populate("Vendeur", ["Fname", "Lname", "ProfilePicture"])
-        .populate("idProdui", ["Nom"]);
-
-      const sellnoti = await Notification.find({
-        TypeNoti: "sell",
-        isDelete: { $ne: userId },
-      })
-        .populate("Vendeur", ["Fname", "Lname", "ProfilePicture"])
-        .populate("idProdui", ["Nom"]);
-
-      let notis = typenoti.concat(...admnoti, ...sellnoti);
+        .populate("Payements")
+        .populate("Eleve")
+        .populate("Admn");
 
       res.json({
-        all: typenoti,
-        adm: notis.sort((p1, p2) => {
+        Notis: noti.sort((p1, p2) => {
           return new Date(p2?.createdAt) - new Date(p1?.createdAt);
         }),
       });
     }
   } catch (error) {}
+};
+
+//Delete noti notification
+const deletingNoti = async (req, res) => {
+  const userId = req.params.id;
+  const { notiId } = req.body;
+
+  try {
+    const noti = await Notification.findById(notiId);
+    if (noti) {
+      await noti.updateOne({ $push: { isDelete: userId } });
+      res.json({ do: "done" });
+    }
+  } catch (err) {}
 };
 
 //Read noti notification
@@ -317,216 +268,13 @@ const goreadNoti = async (req, res) => {
 
   try {
     const noti = await Notification.findById(id);
-    if (noti) {
+    if (noti.isRead.includes(userId)) {
+      res.json("always read");
+    } else {
       await noti.updateOne({ $push: { isRead: userId } });
       res.json({ do: "done" });
-    } else {
-      res.json("alwas read");
     }
   } catch (err) {}
-};
-
-//Delete noti notification
-const DeleteNoti = async (req, res) => {
-  const { userId, id } = req.params;
-
-  try {
-    const noti = await Notification.findById(id);
-    if (noti) {
-      await noti.updateOne({ $push: { isDelete: userId } });
-      res.json({ do: "done" });
-    }
-  } catch (err) {}
-};
-
-// Getting command
-const getAllCommand = async (req, res) => {
-  try {
-    const command = await Commende.find()
-      .populate("Client", ["Fname", "Lname", "ProfilePicture"])
-      .populate("idProdui");
-    if (command) {
-      res.json(command);
-    }
-  } catch (error) {}
-};
-
-//Add drugs to art
-const addDrug = async (req, res) => {
-  const drug = req.params.id;
-  const { num } = req.body;
-
-  try {
-    const med = await Medicament.updateOne(
-      { _id: drug },
-      { $inc: { quantite: -num } }
-    );
-    if (med) {
-      res.json("done");
-    }
-  } catch (error) {}
-};
-
-//Cancel a drug
-const cancelDrugCart = async (req, res) => {
-  const drug = req.params.id;
-  const { num } = req.body;
-
-  try {
-    const med = await Medicament.updateOne(
-      { _id: drug },
-      { $inc: { quantite: +num } }
-    );
-    if (med) {
-      res.json("done");
-    }
-  } catch (error) {}
-};
-
-//Add a drug's quantity to the cart
-const addDrugCart = async (req, res) => {
-  const drug = req.params.id;
-  const { num } = req.body;
-
-  try {
-    const med = await Medicament.updateOne(
-      { _id: drug },
-      { $inc: { quantite: -num } }
-    );
-    if (med) {
-      res.json("done");
-    }
-  } catch (error) {}
-};
-
-//Remove a drug's quantity to the cart
-const removeDrugCart = async (req, res) => {
-  const drug = req.params.id;
-  const { num } = req.body;
-
-  try {
-    const med = await Medicament.updateOne(
-      { _id: drug },
-      { $inc: { quantite: +1 } }
-    );
-    if (med) {
-      res.json("done");
-    }
-  } catch (error) {}
-};
-
-//Cancel all drugs sellie,g operation
-const cancelSell = async (req, res) => {
-  const { Drug } = req.body;
-  try {
-    Drug.map(async (e) => {
-      const All = await Medicament.updateOne(
-        { _id: e._id },
-        { $inc: { quantite: +e.Qty } }
-      );
-    });
-    res.json("Done");
-  } catch (error) {}
-};
-
-//Noti for commande
-const CreateAdmNoti = async (venderId, e) => {
-  const noti = new Notification({
-    idProdui: e,
-    Vendeur: venderId,
-    TypeNoti: "sell",
-  });
-  await noti.save();
-};
-
-//Creating chart dayly chart
-const daylychart = async (data) => {
-  const date = new Date().getDate();
-
-  data.map(async (e) => {
-    const perDrug = await Dailychart.findOne({ idProduit: e._id, Day: date });
-    if (perDrug) {
-      await perDrug.update({ $set: { Qty: e.Qty + perDrug.Qty } });
-    } else {
-      const chart = new Dailychart({
-        name: e.Nom,
-        Qty: e.Qty,
-        Day: date,
-        idProduit: e._id,
-      });
-      await chart.save();
-    }
-  });
-};
-
-//Sell drug
-const selling = async (req, res) => {
-  const userId = req.params.id;
-  const { data, PTG, qt } = req.body;
-  const date = new Date().getDate();
-  var idProd = [];
-  try {
-    daylychart(data);
-    const ventelenght = await Ventes.find();
-
-    const vante = data.map(async (e) => {
-      idProd.push(e._id);
-    });
-    const ventes = new Ventes({
-      FacNum: ventelenght.length + 1,
-      idProduit: idProd,
-      Vendeur: userId,
-      PT: PTG,
-      qt: qt,
-      Vendus: data,
-      perDay: date,
-    });
-    if (vante) {
-      await ventes.save();
-      CreateAdmNoti(userId, idProd);
-      res.json(ventes._id);
-    }
-  } catch (error) {}
-};
-
-const soldProduct = async (req, res) => {
-  const { id } = req.params;
-
-  try {
-    const venteProd = await Ventes.findById(id).populate("Vendeur", [
-      "Fname",
-      "Lname",
-    ]);
-    if (venteProd) {
-      res.json(venteProd);
-    } else {
-      res.json("vente not found");
-    }
-  } catch (error) {}
-};
-
-//Getting drugs of the days
-const dayDrugs = async (req, res) => {
-  const date = new Date().getDate();
-
-  try {
-    const drugs = await Ventes.find({ perDay: date });
-    if (drugs) {
-      res.json(drugs);
-    }
-  } catch (error) {}
-};
-
-//Getting the chart of the day
-const dayChart = async (req, res) => {
-  const date = new Date().getDate();
-
-  try {
-    const sell = await Dailychart.find({ Day: date });
-    if (sell) {
-      res.json(sell);
-    }
-  } catch (error) {}
 };
 
 //Getting noti length
@@ -536,42 +284,169 @@ const notiLength = async (req, res) => {
     const noti = await Notification.find({
       isDelete: { $ne: user },
       isRead: { $ne: user },
-    }).select(["Vendeur", "isDelete", "isRead"]);
+    }).select(["Eleve"]);
     if (noti) {
       res.json(noti);
     }
   } catch (error) {}
 };
 
+//Getting paid pupils list
+const gettingPupil = async (req, res) => {
+  const month = Number(req.params.id);
+  try {
+    const pupils = await Payement.find({ ActuelMois: month }).populate("Eleve");
+
+    if (pupils) {
+      res.json(pupils);
+    }
+  } catch (error) {}
+};
+
+//Getting unpaid pupils list
+const gettingUnPidPupil = async (req, res) => {
+  const month = Number(req.params.id);
+  try {
+    const pupils = await Payement.find({ ActuelMois: month });
+    const paid = [];
+    pupils.map((id) => paid.push(id.Eleve));
+
+    if (pupils) {
+      const unpaid = await Eleve.find({ _id: { $nin: paid } });
+      res.json(unpaid);
+    }
+  } catch (error) {}
+};
+
+//Gettign pupils by their promotion
+const classPaid = async (req, res) => {
+  const classe = req.params.value;
+
+  const mois = new Date().getMonth();
+
+  try {
+    const pupils = await Payement.find({ ActuelMois: mois + 1 });
+    const paid = [];
+    pupils.map((id) => paid.push(id.Eleve));
+
+    const pupil = await Eleve.find({ Classe: classe, _id: { $in: paid } });
+    if (pupil) {
+      res.json({ pupils: pupil });
+    }
+  } catch (error) {}
+};
+
+//Gettign pupils by their promotion
+const classUnPaid = async (req, res) => {
+  const classe = req.params.value;
+
+  const mois = new Date().getMonth();
+
+  try {
+    const pupils = await Payement.find({ ActuelMois: mois + 1 });
+    const paid = [];
+    pupils.map((id) => paid.push(id.Eleve));
+
+    const pupil = await Eleve.find({ Classe: classe, _id: { $nin: paid } });
+    if (pupil) {
+      res.json({ pupils: pupil });
+    }
+  } catch (error) {}
+};
+
+//Creating post or commuique
+const PostComminique = async (req, res) => {
+  const userId = req.params.id;
+  const { Title, Text } = req.body;
+
+  const commuique = new Communique({
+    Titre: Title,
+    Text: Text,
+    Adm: userId,
+  });
+  if (userId) {
+    await commuique.save();
+    res.json("done");
+  }
+};
+
+//Getting post communique
+const SourirePommunique = async (req, res) => {
+  try {
+    const post = await Communique.find({ isDelete: false }).populate("Adm");
+    if (post) {
+      res.json({ post: post });
+    }
+  } catch (error) {}
+};
+
+//Deleting communique @post
+const deleting = async (req, res) => {
+  const userId = req.params.id;
+  const { post } = req.body;
+
+  try {
+    const commuique = await Communique.findById(post);
+    if (commuique) {
+      await commuique.updateOne({ $set: { isDelete: true } });
+      res.json("done");
+    }
+  } catch (error) {}
+};
+
+//Commenting
+const HendleComment = async (req, res) => {
+  const { postId, text } = req.body;
+  const user = req.params.id;
+
+  const comment = new Comment({
+    Text: text,
+    Communique: postId,
+    User: user,
+  });
+
+  try {
+    const post = await Communique.findById(postId);
+    if (post) {
+      await comment.save();
+      await post.updateOne({ $push: { Comment: comment._id } });
+      res.json("done");
+    }
+  } catch (error) {}
+};
+
+//Getting comment
+const commentaire = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const comment = await Comment.find({ Communique: id }).populate("User")
+    if (comment) {
+      res.json({ coms: comment });
+    }
+  } catch (error) {}
+};
+
 module.exports = {
-  handleSign,
   handleSignup,
-  AddProfilePicture,
-  skip,
-  userlanguage,
-  AddDrug,
-  gettingDrugs,
-  addDescription,
-  gettingDSingleDrug,
-  EditDrugName,
-  EditDrugGramme,
-  EditDrugQty,
-  EditDrugPrrice,
-  DeleteDrug,
-  commandDrugs,
-  getCommandAsNoti,
-  goreadNoti,
-  DeleteNoti,
+  completeSignup,
   userLogin,
-  getAllCommand,
-  addDrug,
-  cancelDrugCart,
-  addDrugCart,
-  removeDrugCart,
-  cancelSell,
-  selling,
-  soldProduct,
-  dayDrugs,
-  dayChart,
+  AddingAdm,
+  AddPupil,
+  pupils,
+  searcPupil,
+  specifPupils,
+  payingForMonth,
+  getNoti,
+  deletingNoti,
+  goreadNoti,
   notiLength,
+  gettingPupil,
+  gettingUnPidPupil,
+  classPaid,
+  classUnPaid,
+  PostComminique,
+  SourirePommunique,
+  deleting,
+  HendleComment,
+  commentaire,
 };

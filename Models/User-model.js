@@ -3,7 +3,6 @@ const Schema = mongoose.Schema;
 
 let User = new Schema(
   {
-  
     Fname: {
       type: String,
     },
@@ -12,24 +11,9 @@ let User = new Schema(
     },
     IsAdmin: {
       type: Boolean,
-      default : false
+      default: false,
     },
-    IsSeller: {
-      type: Boolean,
-    },
-    Adress: {
-      type: String, 
-    },
-    Desc: {
-      type: String, 
-    },
-    Medicament: [
-      {
-        type: Schema.Types.ObjectId,
-        ref: "Medicament",
-        default: [],
-      },
-    ],
+    AnneeScolaire: [],
     MyNoti: [
       {
         type: Schema.Types.ObjectId,
@@ -37,24 +21,12 @@ let User = new Schema(
         default: [],
       },
     ],
-    Sex: {
-      type: String,
-    },
-    SelectedLang: {
-      type: String,
-      default: "French",
-    },
-    
-    DrugSearched: [
+    pupilSearched: [
       {
         type: Schema.Types.ObjectId,
         ref: "Medicament",
       },
     ],
-    ProfilePicture: {
-      type: Schema.Types.ObjectId,
-      ref: "ProfilePicture",
-    },
     Login: {
       type: Schema.Types.ObjectId,
       ref: "Login",
